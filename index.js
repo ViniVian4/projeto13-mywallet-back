@@ -19,9 +19,27 @@ mongoClient.connect().then(() => {
     db = mongoClient.db('MyWallet');
 });
 
+const signUpSchema = joi.object(
+    {
+        name: joi.string().trim().required(),
+        email: joi.email().required(),
+        password: joi.string().noWhiteSpaces().trim().required(),
+        confirmPassword: joi.ref('password').required()
+
+    }
+);
+
 
 app.post("/SignUp", async (req, res) => {
-    const { name, email, password } = req.body;
+    const user = req.body;
+
+    const validation = signUpSchema.validate(user, { abortEarly: true });
+    if (validation.error){
+        res.status(422).send("Algum dado está inválido");
+        return;
+    }
+
+    const { name, email, password, confirmPassword } = user;
 
     const passwordHash = bcrypt.hashSync(password, 10);
 
