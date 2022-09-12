@@ -132,5 +132,55 @@ app.post("/SignUp", async (req, res) => {
 });
 
 
+//deposit Route
+
+const depositSchema = joi.object(
+    {
+        value: joi.number().required(),
+        description: joi.string().required()
+    });
+
+app.post("/deposit", async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    if (!token) {
+        res.sendStatus(401);
+        return;
+    }
+
+    try {
+        const session = await db.collection("sessions").findOne({ token });
+
+        if (!session) {
+            res.sendStatus(401);
+            return;
+        }
+
+        const depositData = req.body;
+        const validation = depositSchema.validate(depositData, { abortEarly: true });
+        if (validation.error) {
+            res.status(422).send("Algum dado está inválido");
+            return;
+        }
+
+        const { value, description } = depositData;
+
+        await db.collection("deposits").insertOne(
+            {
+                userId: session.userId,
+                depositValue: Number(value),
+                description: description
+            }
+        );
+
+        res.sendStatus(201);
+    } catch (error) {
+        res.sendStatus(401);
+        return;
+    }
+})
+
+
 
 app.listen(5000);
