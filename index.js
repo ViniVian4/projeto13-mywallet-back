@@ -19,12 +19,78 @@ mongoClient.connect().then(() => {
     db = mongoClient.db('MyWallet');
 });
 
+//Login Route
+
+const userSchema = joi.object(
+    {
+        email: joi.string().email().required(),
+        password: joi.string().required()
+    }
+);
+
+app.post("/", async (req, res) => {
+    const user = req.body;
+
+    const validation = userSchema.validate(user, { abortEarly: true });
+    if (validation.error) {
+        res.status(422).send("Usuário ou senha inválidos");
+        return;
+    }
+
+    const { email, password } = user;
+
+    try {
+        const dbUser = await db.collection("users").findOne({ email });
+
+        if (dbUser && bcrypt.compareSync(password, dbUser.password)) {
+            const token = uuid();
+
+            const dbToken = await db.collection("sessions").findOne({ userId: dbUser._id });
+
+            if (dbToken) {
+                await db.collection("sessions").updateOne(
+                    {
+                        _id: dbToken._id
+                    },
+                    {
+                        $set:
+                        {
+                            token,
+                            userId: dbUser._id
+                        }
+                    });
+            } else {
+                await db.collection("sessions").insertOne(
+                    {
+                        token,
+                        userId: dbUser._id
+                    }
+                );
+            }
+
+            return res.send(token);
+        } else {
+            res.sendStatus(401);
+            return;
+        }
+
+    } catch (error) {
+        res.sendStatus(500);
+    }
+});
+
+
+
+
+
+//Sign-up Route
+
 const signUpSchema = joi.object(
     {
         name: joi.string().trim().required(),
-        email: joi.email().required(),
-        password: joi.string().noWhiteSpaces().trim().required(),
-        confirmPassword: joi.ref('password').required()
+        email: joi.string().email().required(),
+        password: joi.string().trim().required(),
+        confirmPassword: joi.ref('password')
 
     }
 );
@@ -34,7 +100,7 @@ app.post("/SignUp", async (req, res) => {
     const user = req.body;
 
     const validation = signUpSchema.validate(user, { abortEarly: true });
-    if (validation.error){
+    if (validation.error) {
         res.status(422).send("Algum dado está inválido");
         return;
     }
