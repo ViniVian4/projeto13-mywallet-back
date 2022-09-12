@@ -176,8 +176,7 @@ app.post("/deposit", async (req, res) => {
 
         res.sendStatus(201);
     } catch (error) {
-        res.sendStatus(401);
-        return;
+        res.sendStatus(500);
     }
 });
 
@@ -225,9 +224,43 @@ app.post("/withdraw", async (req, res) => {
 
         res.sendStatus(201);
     } catch (error) {
+        res.sendStatus(500);
+    }
+});
+
+//wallet route
+
+app.get("/wallet", async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    if (!token) {
         res.sendStatus(401);
         return;
     }
-});
+
+    try {
+        const session = await db.collection("sessions").findOne({ token });
+
+        if (!session) {
+            res.sendStatus(401);
+            return;
+        }
+
+        const userId = session.userId;
+
+        const depositsArray = await db.collection("deposits").find({ userId }).toArray();
+        const withdrawsArray = await db.collection("withdraws").find({ userId }).toArray();
+
+        res.send(
+            {
+                depositsArray,
+                withdrawsArray
+            }
+        );
+    } catch (error) {
+        res.sendStatus(500);
+    }
+})
 
 app.listen(5000);
