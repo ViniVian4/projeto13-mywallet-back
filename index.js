@@ -179,8 +179,55 @@ app.post("/deposit", async (req, res) => {
         res.sendStatus(401);
         return;
     }
-})
+});
 
+// withdraw route
 
+const withdrawSchema = joi.object(
+    {
+        value: joi.number().required(),
+        description: joi.string().required()
+    });
+
+app.post("/withdraw", async (req, res) => {
+    const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '');
+
+    if (!token) {
+        res.sendStatus(401);
+        return;
+    }
+
+    try {
+        const session = await db.collection("sessions").findOne({ token });
+
+        if (!session) {
+            res.sendStatus(401);
+            return;
+        }
+
+        const withdrawData = req.body;
+        const validation = withdrawSchema.validate(withdrawData, { abortEarly: true });
+        if (validation.error) {
+            res.status(422).send("Algum dado está inválido");
+            return;
+        }
+
+        const { value, description } = withdrawData;
+
+        await db.collection("withdraws").insertOne(
+            {
+                userId: session.userId,
+                withdrawValue: Number(value),
+                description: description
+            }
+        );
+
+        res.sendStatus(201);
+    } catch (error) {
+        res.sendStatus(401);
+        return;
+    }
+});
 
 app.listen(5000);
