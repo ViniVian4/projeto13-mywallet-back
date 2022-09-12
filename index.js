@@ -68,7 +68,12 @@ app.post("/", async (req, res) => {
                 );
             }
 
-            return res.send(token);
+            const userData = {
+                token: token,
+                name: dbUser.name
+            }
+
+            return res.send(userData);
         } else {
             res.sendStatus(401);
             return;
@@ -78,10 +83,6 @@ app.post("/", async (req, res) => {
         res.sendStatus(500);
     }
 });
-
-
-
-
 
 //Sign-up Route
 
