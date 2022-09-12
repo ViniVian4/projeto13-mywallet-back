@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import joi from "joi";
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
+import dayjs from 'dayjs';
 
 dotenv.config();
 
@@ -166,11 +167,14 @@ app.post("/deposit", async (req, res) => {
 
         const { value, description } = depositData;
 
+        const date = dayjs().format('DD/MM/YYYY');
+
         await db.collection("deposits").insertOne(
             {
                 userId: session.userId,
                 depositValue: Number(value),
-                description: description
+                description: description,
+                date: date
             }
         );
 
@@ -214,11 +218,14 @@ app.post("/withdraw", async (req, res) => {
 
         const { value, description } = withdrawData;
 
+        const date = dayjs().format('DD/MM/YYYY');
+
         await db.collection("withdraws").insertOne(
             {
                 userId: session.userId,
                 withdrawValue: Number(value),
-                description: description
+                description: description,
+                date: date
             }
         );
 
