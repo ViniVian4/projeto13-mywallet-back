@@ -167,14 +167,15 @@ app.post("/deposit", async (req, res) => {
 
         const { value, description } = depositData;
 
-        const date = dayjs().format('DD/MM/YYYY');
+        const date = dayjs().format('DD/MM');
 
         await db.collection("deposits").insertOne(
             {
                 userId: session.userId,
-                depositValue: Number(value),
+                value: Number(value),
                 description: description,
-                date: date
+                date: date,
+                isDeposit: true
             }
         );
 
@@ -218,14 +219,15 @@ app.post("/withdraw", async (req, res) => {
 
         const { value, description } = withdrawData;
 
-        const date = dayjs().format('DD/MM/YYYY');
+        const date = dayjs().format('DD/MM');
 
-        await db.collection("withdraws").insertOne(
+        await db.collection("deposits").insertOne(
             {
                 userId: session.userId,
-                withdrawValue: Number(value),
+                value: Number(value),
                 description: description,
-                date: date
+                date: date,
+                isDeposit: false
             }
         );
 
@@ -256,13 +258,12 @@ app.get("/wallet", async (req, res) => {
 
         const userId = session.userId;
 
-        const depositsArray = await db.collection("deposits").find({ userId }).toArray();
-        const withdrawsArray = await db.collection("withdraws").find({ userId }).toArray();
+        const depositsArray = await db.collection("deposits")
+            .find({ userId }).toArray();
 
         res.send(
             {
-                depositsArray,
-                withdrawsArray
+                depositsArray
             }
         );
     } catch (error) {
